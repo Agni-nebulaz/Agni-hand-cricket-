@@ -1,0 +1,1847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HANDDOWN — Hand Cricket</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pitch:#163C2C;
+    --pitch-deep:#0E2018;
+    --chalk:#F6F1E4;
+    --leather:#B23A2E;
+    --floodlight:#F5B301;
+    --ink:#0E2018;
+    --line: rgba(246,241,228,0.14);
+    --panel: #102A1F;
+    /* character palette, one per bot difficulty */
+    --easy-a:#3ECF8E;   --easy-b:#0F5132;
+    --med-a:#F5B301;    --med-b:#7A4A00;
+    --hard-a:#E14B3C;   --hard-b:#3A0E0A;
+    --imp-a:#8B5CF6;    --imp-b:#170A2E;   --imp-glow:#FFD86B;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--chalk);
+    color:var(--ink);
+    font-family:'Work Sans', sans-serif;
+    overflow-x:hidden;
+    position:relative;
+  }
+  /* Cinematic grain + vignette, fixed over the whole page. Subtle, slow drift. */
+  .grain-layer{
+    position:fixed; inset:-10%; z-index:1000; pointer-events:none;
+    opacity:0.05; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation: grainShift 9s steps(6) infinite;
+  }
+  @keyframes grainShift{
+    0%{transform:translate(0,0);} 20%{transform:translate(-1%,1%);} 40%{transform:translate(1%,-1%);}
+    60%{transform:translate(-1%,-1%);} 80%{transform:translate(1%,1%);} 100%{transform:translate(0,0);}
+  }
+  .vignette-layer{
+    position:fixed; inset:0; z-index:999; pointer-events:none;
+    box-shadow: inset 0 0 220px rgba(0,0,0,0.35);
+  }
+  h1,h2,h3, .display{
+    font-family:'Teko', sans-serif;
+    font-weight:600;
+    letter-spacing:0.01em;
+  }
+  .mono{font-family:'Space Mono', monospace;}
+  a{color:inherit;}
+  img{max-width:100%;display:block;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+  ::selection{background:var(--floodlight); color:var(--ink);}
+
+  /* ---------- reduced motion ---------- */
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
+  }
+
+  /* ---------- NAV ---------- */
+  header.nav{
+    position:sticky; top:0; z-index:50;
+    background:var(--pitch-deep);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-inner{
+    max-width:1180px; margin:0 auto; padding:14px 28px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .brand{
+    display:flex; align-items:center; gap:10px;
+    color:var(--chalk); font-family:'Teko',sans-serif;
+    font-size:26px; letter-spacing:0.04em; font-weight:700;
+    text-decoration:none;
+  }
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--floodlight);}
+  nav.links{display:flex; gap:26px; list-style:none;}
+  nav.links a{
+    color:var(--chalk); opacity:0.75; text-decoration:none;
+    font-size:14px; letter-spacing:0.03em; text-transform:uppercase;
+    font-weight:600; transition:opacity .2s;
+  }
+  nav.links a:hover{opacity:1;}
+  .nav-cta{
+    background:var(--floodlight); color:var(--ink); border:none;
+    font-family:'Work Sans',sans-serif; font-weight:700; font-size:13px;
+    letter-spacing:0.03em; text-transform:uppercase;
+    padding:10px 18px; border-radius:2px; cursor:pointer;
+  }
+  #modeToggle{
+    background:transparent; border:1px solid var(--line); color:var(--chalk);
+    width:36px;height:36px; border-radius:50%; cursor:pointer; font-size:16px;
+    display:flex;align-items:center;justify-content:center; margin-right:10px;
+  }
+  .navRight{display:flex; align-items:center;}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    background:
+      radial-gradient(ellipse 900px 500px at 50% -10%, rgba(245,179,1,0.10), transparent),
+      repeating-linear-gradient(180deg, transparent 0 78px, rgba(246,241,228,0.035) 78px 79px),
+      var(--pitch);
+    color:var(--chalk);
+    padding:86px 0 64px;
+    position:relative;
+    border-bottom:1px solid var(--line);
+  }
+  .hero::after{
+    content:"";
+    position:absolute; left:50%; top:0; bottom:0; width:1px;
+    background:rgba(246,241,228,0.08); transform:translateX(-50%);
+  }
+  .hero-inner{
+    display:grid; grid-template-columns:1.1fr 0.9fr; gap:48px; align-items:center;
+  }
+  .eyebrow{
+    font-family:'Space Mono', monospace; font-size:12px; letter-spacing:0.15em;
+    text-transform:uppercase; color:var(--floodlight); margin-bottom:18px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{content:"●"; font-size:8px;}
+  .hero h1{
+    font-size:clamp(48px,7vw,84px); line-height:0.92; color:var(--chalk);
+  }
+  .hero h1 em{font-style:normal; color:var(--floodlight);}
+  .hero p.lede{
+    margin-top:20px; font-size:18px; line-height:1.6; color:rgba(246,241,228,0.78);
+    max-width:46ch;
+  }
+  .hero-ctas{display:flex; align-items:center; gap:26px; margin-top:32px; flex-wrap:wrap;}
+  .hero-secondary{display:flex; flex-direction:column; gap:10px; align-items:flex-start;}
+  .play-huge{
+    width:150px; height:150px; border-radius:50%; flex-shrink:0;
+    background:radial-gradient(circle at 35% 28%, #fff3c4, var(--floodlight) 62%);
+    color:var(--ink); border:none; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    box-shadow:0 0 0 0 rgba(245,179,1,0.55), 0 22px 46px -16px rgba(0,0,0,0.6);
+    animation:playPulse 2.6s ease-in-out infinite;
+    transition:transform .2s ease;
+  }
+  .play-huge:hover{transform:scale(1.05);}
+  .play-huge:active{transform:scale(0.96);}
+  .play-huge .icon{font-size:26px; line-height:1;}
+  .play-huge .label{font-family:'Teko',sans-serif; font-size:24px; letter-spacing:0.08em; line-height:1;}
+  @keyframes playPulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(245,179,1,0.55), 0 22px 46px -16px rgba(0,0,0,0.6);}
+    50%{box-shadow:0 0 0 20px rgba(245,179,1,0), 0 22px 46px -16px rgba(0,0,0,0.6);}
+  }
+  .live-badge{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:'Space Mono',monospace; font-size:12px; color:rgba(246,241,228,0.75);
+    background:rgba(246,241,228,0.06); border:1px solid rgba(246,241,228,0.16);
+    padding:8px 14px; border-radius:20px; width:fit-content;
+  }
+  .live-badge .pulse-dot{width:8px; height:8px; border-radius:50%; background:var(--easy-a); box-shadow:0 0 8px var(--easy-a); animation:dotPulse 1.6s ease-in-out infinite;}
+  @keyframes dotPulse{0%,100%{opacity:1;} 50%{opacity:0.35;}}
+  .btn{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:14px 26px; border-radius:2px; border:none; cursor:pointer;
+    font-weight:700; font-size:14px; letter-spacing:0.03em; text-transform:uppercase;
+    font-family:'Work Sans',sans-serif; transition:transform .15s ease, background .2s;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--floodlight); color:var(--ink);}
+  .btn-primary:hover{background:#ffc933;}
+  .btn-ghost{background:transparent; color:var(--chalk); border:1px solid rgba(246,241,228,0.35);}
+  .btn-ghost:hover{border-color:var(--chalk);}
+
+  /* Flip scoreboard */
+  .scoreboard{
+    background:var(--pitch-deep);
+    border:1px solid rgba(246,241,228,0.12);
+    padding:22px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.5);
+  }
+  .scoreboard .sb-label{
+    font-family:'Space Mono',monospace; font-size:11px; letter-spacing:0.15em;
+    text-transform:uppercase; color:rgba(246,241,228,0.55); margin-bottom:14px;
+    display:flex; justify-content:space-between;
+  }
+  .stat-board{display:grid; grid-template-columns:1.35fr 1fr 1fr; gap:10px;}
+  .stat-block{
+    background:linear-gradient(180deg,#173622,#0d1f15);
+    border-radius:6px; padding:14px 8px 12px; text-align:center;
+    box-shadow: inset 0 0 0 1px rgba(245,179,1,0.14), 0 4px 10px rgba(0,0,0,0.35);
+  }
+  .stat-label{
+    font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.12em;
+    text-transform:uppercase; color:rgba(246,241,228,0.55); display:block; margin-bottom:6px;
+  }
+  .stat-stars{
+    color:var(--floodlight); font-size:13px; letter-spacing:2px; margin-bottom:2px;
+    text-shadow:0 0 8px rgba(245,179,1,0.55);
+  }
+  .stat-value{
+    font-family:'Teko',sans-serif; font-size:46px; line-height:1; color:var(--floodlight);
+    text-shadow:0 0 16px rgba(245,179,1,0.25);
+  }
+  .stat-value.pop{animation:statPop .4s ease;}
+  @keyframes statPop{ 0%{transform:scale(1);} 45%{transform:scale(1.18);} 100%{transform:scale(1);} }
+  .sb-meta{
+    display:flex; justify-content:space-between; margin-top:14px;
+    font-family:'Space Mono',monospace; font-size:12px; color:rgba(246,241,228,0.6);
+  }
+  .sb-meta b{color:var(--chalk);}
+
+  /* ---------- SECTION HEADERS ---------- */
+  section{padding:76px 0;}
+  .sec-head{
+    display:flex; align-items:baseline; gap:16px; margin-bottom:36px;
+    border-bottom:1px solid rgba(14,32,24,0.12); padding-bottom:18px;
+  }
+  .sec-num{
+    font-family:'Space Mono',monospace; font-size:13px; color:var(--leather); font-weight:700;
+  }
+  .sec-head h2{font-size:44px; line-height:1;}
+  .sec-head p{margin-left:auto; font-size:14px; color:rgba(14,32,24,0.6); max-width:34ch; text-align:right;}
+
+  /* ---------- MODES ---------- */
+  .modes-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px;}
+  .mode-card{
+    background:var(--chalk); border:1px solid rgba(14,32,24,0.14);
+    padding:22px 20px; cursor:pointer; transition:transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s ease, border-color .2s ease;
+    position:relative; overflow:hidden;
+  }
+  .mode-card::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.35) 45%, transparent 60%);
+    transform:translateX(-120%); transition:transform .6s ease;
+  }
+  .mode-card:hover::after{transform:translateX(120%);}
+  .mode-card:hover{border-color:var(--leather); transform:translateY(-6px) scale(1.015); box-shadow:0 20px 40px -18px rgba(14,32,24,0.45);}
+  .mode-card.selected{border-color:var(--floodlight); background:#fff9e8; box-shadow: inset 0 0 0 2px var(--floodlight), 0 20px 40px -18px rgba(245,179,1,0.35);}
+  .mode-card .tag{
+    font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase;
+    color:var(--leather); margin-bottom:8px; display:block;
+  }
+  .mode-card h3{font-size:26px; margin-bottom:6px;}
+  .mode-card p{font-size:13px; color:rgba(14,32,24,0.65); line-height:1.5;}
+  .mode-card.disabled{opacity:0.5; cursor:not-allowed;}
+  .mode-card.disabled:hover{transform:none; border-color:rgba(14,32,24,0.14); box-shadow:none;}
+  .mode-card.disabled:hover::after{transform:translateX(-120%);}
+
+  /* ---------- DIFFICULTY CHARACTERS ---------- */
+  .diff-row{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:18px;}
+  .diff-card{
+    background:var(--pitch-deep); border:1px solid rgba(246,241,228,0.12);
+    border-radius:6px; padding:18px 14px; text-align:center; cursor:pointer;
+    color:var(--chalk); position:relative; overflow:hidden;
+    transition:transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s ease, border-color .2s ease;
+  }
+  .diff-card::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.18) 45%, transparent 60%);
+    transform:translateX(-120%); transition:transform .6s ease;
+  }
+  .diff-card:hover::after{transform:translateX(120%);}
+  .diff-card:hover{transform:translateY(-6px) scale(1.03); box-shadow:0 18px 34px -14px rgba(0,0,0,0.55);}
+  .diff-card .avatar{
+    width:64px; height:64px; margin:0 auto 12px; border-radius:50%;
+    box-shadow:0 6px 18px -6px rgba(0,0,0,0.6); display:block;
+  }
+  .diff-card .diff-name{font-family:'Teko',sans-serif; font-size:24px; line-height:1; margin-bottom:4px;}
+  .diff-card .diff-tag{font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; opacity:0.55; margin-bottom:8px; display:block;}
+  .diff-card .diff-blurb{font-size:12px; line-height:1.5; opacity:0.7;}
+  .diff-card.active{border-color:var(--floodlight); box-shadow:inset 0 0 0 2px var(--floodlight), 0 18px 34px -14px rgba(245,179,1,0.35);}
+  .diff-card[data-diff="easy"] .avatar{background:radial-gradient(circle at 35% 30%, var(--easy-a), var(--easy-b));}
+  .diff-card[data-diff="medium"] .avatar{background:radial-gradient(circle at 35% 30%, var(--med-a), var(--med-b));}
+  .diff-card[data-diff="hard"] .avatar{background:radial-gradient(circle at 35% 30%, var(--hard-a), var(--hard-b));}
+  .diff-card[data-diff="impossible"] .avatar{background:radial-gradient(circle at 35% 30%, var(--imp-a), var(--imp-b)); box-shadow:0 0 22px -2px var(--imp-glow), 0 6px 18px -6px rgba(0,0,0,0.6);}
+
+  /* ---------- GAME ARENA ---------- */
+  .arena{
+    position:relative; overflow:hidden;
+    background:
+      radial-gradient(ellipse 120% 55% at 50% -12%, rgba(245,179,1,0.10), transparent 60%),
+      linear-gradient(180deg, #050D08 0%, #0B2015 30%, var(--pitch) 100%);
+    color:var(--chalk);
+    padding:44px; border:1px solid var(--line);
+  }
+  .arena > *:not(.stadium-layer){position:relative; z-index:1;}
+  .stadium-layer{position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:0;}
+  .crowd-strip{
+    position:absolute; top:0; left:0; right:0; height:30px;
+    background-image:repeating-radial-gradient(circle at 7px 30px, rgba(255,255,255,0.06) 0 3px, transparent 4px 15px);
+    opacity:0.85;
+  }
+  .crowd-dot{position:absolute; width:2px; height:2px; border-radius:50%; background:#fff6da; animation:twinkle 3.2s ease-in-out infinite;}
+  @keyframes twinkle{0%,100%{opacity:0;} 50%{opacity:0.9;}}
+  .floodlight{
+    position:absolute; top:-70px; width:220px; height:360px;
+    background:linear-gradient(180deg, rgba(255,251,222,0.32), rgba(255,251,222,0) 78%);
+    clip-path:polygon(46% 0%, 54% 0%, 100% 100%, 0% 100%);
+    filter:blur(1px); mix-blend-mode:screen;
+    animation:floodPulse 5s ease-in-out infinite;
+  }
+  .floodlight.fl-left{left:-50px; transform:rotate(14deg);}
+  .floodlight.fl-right{right:-50px; transform:rotate(-14deg) scaleX(-1); animation-delay:1.4s;}
+  @keyframes floodPulse{0%,100%{opacity:0.55;} 50%{opacity:0.9;}}
+  .arena-particle{
+    position:absolute; bottom:-10px; border-radius:50%;
+    background:radial-gradient(circle, rgba(245,179,1,0.9), rgba(245,179,1,0) 70%);
+    animation:particleFloat linear infinite;
+  }
+  @keyframes particleFloat{
+    0%{transform:translateY(0) translateX(0); opacity:0;}
+    12%{opacity:0.75;}
+    88%{opacity:0.3;}
+    100%{transform:translateY(-420px) translateX(var(--drift, 12px)); opacity:0;}
+  }
+  .arena-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; flex-wrap:wrap; gap:16px;}
+  .arena-top .status{font-family:'Space Mono',monospace; font-size:13px; color:var(--floodlight);}
+  .players{display:grid; grid-template-columns:1fr auto 1fr; gap:20px; align-items:center; margin-bottom:34px;}
+  .player-box{text-align:center;}
+  .player-box .who{font-family:'Space Mono',monospace; font-size:11px; letter-spacing:0.15em; text-transform:uppercase; opacity:0.6; margin-bottom:10px;}
+  .bot-avatar-badge{
+    width:40px; height:40px; border-radius:50%; display:block; margin:0 auto 8px;
+    box-shadow:0 4px 12px -4px rgba(0,0,0,0.6);
+  }
+  .bot-avatar-badge[data-diff="easy"]{background:radial-gradient(circle at 35% 30%, var(--easy-a), var(--easy-b));}
+  .bot-avatar-badge[data-diff="medium"]{background:radial-gradient(circle at 35% 30%, var(--med-a), var(--med-b));}
+  .bot-avatar-badge[data-diff="hard"]{background:radial-gradient(circle at 35% 30%, var(--hard-a), var(--hard-b));}
+  .bot-avatar-badge[data-diff="impossible"]{background:radial-gradient(circle at 35% 30%, var(--imp-a), var(--imp-b)); box-shadow:0 0 16px -2px var(--imp-glow);}
+  .hand{
+    font-size:64px; height:96px; display:flex; align-items:center; justify-content:center;
+    background:rgba(246,241,228,0.06); border:1px solid rgba(246,241,228,0.14); border-radius:8px;
+  }
+  .vs{font-family:'Teko',sans-serif; font-size:30px; color:rgba(246,241,228,0.4);}
+
+  .numpad{display:grid; grid-template-columns:repeat(6,1fr); gap:14px; margin-bottom:22px; justify-items:center;}
+  .numbtn{
+    width:64px; height:64px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fffdf6, var(--chalk) 70%);
+    color:var(--ink); border:none;
+    font-family:'Teko',sans-serif; font-size:30px; cursor:pointer;
+    position:relative; overflow:hidden;
+    box-shadow:0 0 0 0 rgba(245,179,1,0), 0 6px 14px -6px rgba(0,0,0,0.5);
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .2s ease, background .2s ease;
+  }
+  .numbtn:hover:not(:disabled){
+    transform:translateY(-3px) scale(1.06);
+    box-shadow:0 0 22px 2px rgba(245,179,1,0.55), 0 10px 18px -6px rgba(0,0,0,0.55);
+    background:radial-gradient(circle at 35% 30%, #fff, var(--floodlight) 75%);
+  }
+  .numbtn:active:not(:disabled){transform:translateY(-1px) scale(0.96);}
+  .numbtn.fired{animation:numPulse .45s ease;}
+  @keyframes numPulse{
+    0%{box-shadow:0 0 0 0 rgba(245,179,1,0.7), 0 6px 14px -6px rgba(0,0,0,0.5);}
+    60%{box-shadow:0 0 30px 10px rgba(245,179,1,0.35), 0 6px 14px -6px rgba(0,0,0,0.5);}
+    100%{box-shadow:0 0 0 0 rgba(245,179,1,0), 0 6px 14px -6px rgba(0,0,0,0.5);}
+  }
+  .numbtn:disabled{opacity:0.35; cursor:not-allowed;}
+  .numbtn .ripple{
+    position:absolute; border-radius:50%; background:rgba(178,58,46,0.45);
+    transform:scale(0); animation:rippleGrow .55s ease-out forwards; pointer-events:none;
+  }
+  @keyframes rippleGrow{ to{ transform:scale(2.6); opacity:0; } }
+
+  .commentary{
+    background:rgba(0,0,0,0.22); border-radius:4px; padding:16px 18px;
+    font-family:'Space Mono',monospace; font-size:13px; line-height:1.9;
+    max-height:150px; overflow-y:auto;
+  }
+  .commentary p{opacity:0; animation:fadeIn .3s forwards;}
+  @keyframes fadeIn{to{opacity:1;}}
+  .commentary p b{color:var(--floodlight);}
+
+  .toss-panel, .result-panel{
+    text-align:center; padding:30px 0;
+  }
+  .toss-panel h3, .result-panel h3{font-size:38px; margin-bottom:14px;}
+  .toss-panel .opts, .result-panel .opts{display:flex; gap:14px; justify-content:center; margin-top:22px; flex-wrap:wrap;}
+
+  /* ---------- LEADERBOARD ---------- */
+  .lb-table{width:100%; border-collapse:collapse; font-family:'Space Mono',monospace; font-size:13px;}
+  .lb-table th{
+    text-align:left; padding:12px 14px; background:var(--pitch); color:var(--chalk);
+    text-transform:uppercase; letter-spacing:0.06em; font-size:11px;
+  }
+  .lb-table td{padding:12px 14px; border-bottom:1px solid rgba(14,32,24,0.1);}
+  .lb-table tr:nth-child(odd) td{background:rgba(14,32,24,0.02);}
+  .lb-rank{color:var(--leather); font-weight:700;}
+  .lb-empty{padding:40px; text-align:center; color:rgba(14,32,24,0.5);}
+
+  /* ---------- REVIEWS ---------- */
+  .review-form{
+    display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:36px;
+    background:var(--pitch); padding:26px; color:var(--chalk);
+  }
+  .review-form .full{grid-column:1/-1;}
+  .review-form input, .review-form textarea{
+    width:100%; padding:12px 14px; background:rgba(246,241,228,0.08);
+    border:1px solid rgba(246,241,228,0.2); color:var(--chalk); font-family:'Work Sans',sans-serif;
+    border-radius:2px;
+  }
+  .review-form textarea{resize:vertical; min-height:70px;}
+  .stars{display:flex; gap:6px; font-size:26px; cursor:pointer;}
+  .stars span{opacity:0.3; transition:opacity .1s;}
+  .stars span.on{opacity:1;}
+  .reviews-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  .review-card{border:1px solid rgba(14,32,24,0.14); padding:20px;}
+  .review-card .rc-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
+  .review-card .rc-name{font-weight:700;}
+  .review-card .rc-stars{color:var(--floodlight); letter-spacing:2px;}
+  .review-card p{font-size:14px; line-height:1.55; color:rgba(14,32,24,0.75); margin-bottom:14px;}
+  .like-btn{
+    background:none; border:1px solid rgba(14,32,24,0.2); padding:6px 12px; border-radius:20px;
+    cursor:pointer; font-size:12px; font-family:'Space Mono',monospace;
+  }
+  .like-btn.liked{background:var(--leather); color:#fff; border-color:var(--leather);}
+
+  footer{background:var(--pitch-deep); color:rgba(246,241,228,0.55); padding:36px 0; text-align:center; font-size:13px;}
+  footer b{color:var(--chalk);}
+
+  .note-box{
+    margin-top:14px; font-size:12px; color:rgba(14,32,24,0.55);
+    border-left:2px solid var(--floodlight); padding-left:12px;
+  }
+
+  @media(max-width:900px){
+    .hero-inner{grid-template-columns:1fr;}
+    .hero::after{display:none;}
+    .modes-grid{grid-template-columns:repeat(2,1fr);}
+    .reviews-grid{grid-template-columns:1fr;}
+    .review-form{grid-template-columns:1fr;}
+    nav.links{display:none;}
+    .sec-head{flex-direction:column; align-items:flex-start;}
+    .sec-head p{text-align:left; margin-left:0;}
+  }
+
+  /* Dark mode */
+  body.dark{background:#0E1712; color:var(--chalk);}
+  body.dark .sec-head p{color:rgba(246,241,228,0.55);}
+  body.dark .sec-head h2{color:var(--chalk);}
+  body.dark .sec-head{border-bottom-color:rgba(246,241,228,0.14);}
+  body.dark .mode-card{background:#132018; border-color:rgba(246,241,228,0.12); color:var(--chalk);}
+  body.dark .mode-card p{color:rgba(246,241,228,0.55);}
+  body.dark .mode-card.selected{background:#1c2a1d;}
+  body.dark .lb-table td{border-bottom-color:rgba(246,241,228,0.1); color:var(--chalk);}
+  body.dark .lb-table tr:nth-child(odd) td{background:rgba(246,241,228,0.03);}
+  body.dark .review-card{border-color:rgba(246,241,228,0.14);}
+  body.dark .review-card p{color:rgba(246,241,228,0.65);}
+  body.dark .like-btn{border-color:rgba(246,241,228,0.25); color:var(--chalk);}
+  body.dark .lb-empty{color:rgba(246,241,228,0.4);}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="char-easy" viewBox="0 0 64 64">
+      <path d="M16 24 Q32 6 48 24 L44 24 Q32 14 20 24 Z" fill="#0F5132"/>
+      <path d="M18 25 Q32 20 46 25" stroke="#0F5132" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <circle cx="24" cy="32" r="3" fill="#F6F1E4"/>
+      <circle cx="40" cy="32" r="3" fill="#F6F1E4"/>
+      <path d="M21 41 Q32 50 43 41" stroke="#F6F1E4" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="char-medium" viewBox="0 0 64 64">
+      <path d="M15 27 L49 27" stroke="#7A4A00" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="24" cy="34" r="3" fill="#F6F1E4"/>
+      <circle cx="40" cy="34" r="3" fill="#F6F1E4"/>
+      <path d="M35 26 L43 23" stroke="#F6F1E4" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M22 44 Q32 48 44 40" stroke="#F6F1E4" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="char-hard" viewBox="0 0 64 64">
+      <rect x="15" y="27" width="14" height="9" rx="3" fill="#170707"/>
+      <rect x="35" y="27" width="14" height="9" rx="3" fill="#170707"/>
+      <path d="M29 31 L35 31" stroke="#170707" stroke-width="2.5"/>
+      <path d="M12 28 L15 27" stroke="#170707" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M52 28 L49 27" stroke="#170707" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M24 45 L40 45" stroke="#F6F1E4" stroke-width="3.5" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="char-impossible" viewBox="0 0 64 64">
+      <path d="M10 20 L26 26 M54 20 L38 26 M32 8 L32 20" stroke="#FFD86B" stroke-width="1.5" opacity="0.55" stroke-linecap="round"/>
+      <circle cx="32" cy="16" r="2" fill="#FFD86B"/>
+      <circle cx="24" cy="32" r="4" fill="#FFD86B"/>
+      <circle cx="40" cy="32" r="4" fill="#FFD86B"/>
+      <circle cx="24" cy="32" r="7" fill="none" stroke="#FFD86B" stroke-width="1" opacity="0.5"/>
+      <circle cx="40" cy="32" r="7" fill="none" stroke="#FFD86B" stroke-width="1" opacity="0.5"/>
+      <path d="M22 46 L42 46" stroke="#FFD86B" stroke-width="2" opacity="0.6" stroke-linecap="round"/>
+    </symbol>
+  </defs>
+</svg>
+<div class="grain-layer"></div>
+<div class="vignette-layer"></div>
+
+
+<header class="nav">
+  <div class="nav-inner">
+    <a href="#top" class="brand"><span class="dot"></span>HANDDOWN</a>
+    <ul class="links">
+      <li><a href="#modes">Play</a></li>
+      <li><a href="#arena">Match</a></li>
+      <li><a href="#leaderboard">Leaderboard</a></li>
+      <li><a href="#reviews">Reviews</a></li>
+    </ul>
+    <div class="navRight">
+      <button id="modeToggle" title="Toggle dark mode">🌙</button>
+      <button class="nav-cta" id="navPlayBtn">Play Now</button>
+    </div>
+  </div>
+</header>
+
+<section class="hero" id="top">
+  <div class="wrap hero-inner">
+    <div>
+      <div class="eyebrow">No app. No account. Just your hand.</div>
+      <h1>ONE BALL.<br>ONE NUMBER.<br><em>ONE WICKET.</em></h1>
+      <p class="lede">Hand cricket, the way it's played on every schoolyard bench and office lunch table — now with a bot that actually learns your patterns. Throw a number, call the toss, and don't get caught out.</p>
+      <div class="hero-ctas">
+        <button class="play-huge" id="heroPlayBtn"><span class="icon">▶</span><span class="label">PLAY</span></button>
+        <div class="hero-secondary">
+          <button class="btn btn-ghost" id="heroPracticeBtn">Practice Mode</button>
+          <button class="btn btn-ghost" id="heroMatchmakeBtn">⚡ Quick Match</button>
+          <div class="live-badge"><span class="pulse-dot"></span><span id="livePlayersCount">…</span> players online</div>
+        </div>
+      </div>
+    </div>
+    <div class="scoreboard">
+      <div class="sb-label"><span>HANDDOWN OVAL</span><span id="heroClock">●LIVE</span></div>
+      <div class="stat-board">
+        <div class="stat-block">
+          <span class="stat-label">Runs</span>
+          <div class="stat-stars" id="heroStars">★★★★☆</div>
+          <div class="stat-value" id="heroRuns">46</div>
+        </div>
+        <div class="stat-block">
+          <span class="stat-label">Overs</span>
+          <div class="stat-value" id="heroOvers" style="font-size:30px; padding-top:14px;">3.2</div>
+        </div>
+        <div class="stat-block">
+          <span class="stat-label">Target</span>
+          <div class="stat-value" id="heroTarget" style="font-size:30px; padding-top:14px;">72</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="dailyChallenge" style="background:var(--pitch-deep); border-bottom:1px solid var(--line); padding:20px 0;">
+  <div class="wrap" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px;">
+    <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+      <span style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--floodlight); background:rgba(245,179,1,0.12); padding:6px 10px; border-radius:4px; white-space:nowrap;">Daily Challenge</span>
+      <span id="dailyChallengeText" style="color:var(--chalk); font-size:14px;">Loading today's challenge…</span>
+    </div>
+    <div id="dailyChallengeStatus" style="font-family:'Space Mono',monospace; font-size:12px; color:rgba(246,241,228,0.6); white-space:nowrap;">—</div>
+  </div>
+</section>
+
+<section id="modes">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <h2>Choose your match</h2>
+      <p>Four bots, four temperaments. Practice never ends. Multiplayer needs a backend we haven't wired up yet.</p>
+    </div>
+
+    <div class="modes-grid" id="modesGrid">
+      <div class="mode-card selected" data-mode="bot">
+        <span class="tag">Solo</span>
+        <h3>Vs Bot</h3>
+        <p>Toss, bat or bowl, five overs. Pick a difficulty below.</p>
+      </div>
+      <div class="mode-card" data-mode="practice">
+        <span class="tag">Solo</span>
+        <h3>Practice</h3>
+        <p>Endless innings against an Easy bot. Chase your own high score.</p>
+      </div>
+      <div class="mode-card" data-mode="tournament">
+        <span class="tag">Solo</span>
+        <h3>Tournament</h3>
+        <p>Best-of-3 matches vs the bot. Cumulative runs decide the trophy.</p>
+      </div>
+      <div class="mode-card" data-mode="multiplayer">
+        <span class="tag">Online · Ranked</span>
+        <h3>Multiplayer</h3>
+        <p>Real players, real-time, over WebSockets. Wins/losses move your ELO.</p>
+      </div>
+    </div>
+
+    <div id="mpPanel" style="display:none; margin-top:20px; background:var(--pitch); color:var(--chalk); padding:26px;">
+      <div id="mpConnectView">
+        <h3 style="font-size:26px; margin-bottom:10px;">Play a real person</h3>
+        <p style="font-size:13px; opacity:0.7; margin-bottom:16px;">Server: <code id="mpServerUrlLabel" class="mono"></code> · <span id="mpLiveCount">…</span> online</p>
+        <div style="display:grid; grid-template-columns:1fr; gap:10px; max-width:340px;">
+          <input type="text" id="mpNameInput" placeholder="Your name (this is your ranked identity)" style="padding:12px 14px; background:rgba(246,241,228,0.08); border:1px solid rgba(246,241,228,0.2); color:var(--chalk); border-radius:2px;">
+          <button class="btn btn-primary" id="mpQuickMatchBtn">⚡ Quick Match (auto-pair)</button>
+          <button class="btn btn-ghost" id="mpCreateBtn">Create Room</button>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="mpJoinCodeInput" placeholder="Room code" maxlength="5" style="flex:1; padding:12px 14px; background:rgba(246,241,228,0.08); border:1px solid rgba(246,241,228,0.2); color:var(--chalk); border-radius:2px; text-transform:uppercase;">
+            <button class="btn btn-ghost" id="mpJoinBtn">Join</button>
+          </div>
+        </div>
+        <p id="mpStatusMsg" style="font-size:12px; margin-top:12px; opacity:0.75;"></p>
+        <div id="mpMyStats" style="margin-top:16px; font-family:'Space Mono',monospace; font-size:12px; opacity:0.8; display:none;">
+          ELO <b id="mpMyElo">—</b> · Rank <b id="mpMyRank">—</b> · <span id="mpMyRecord">—</span>
+        </div>
+      </div>
+      <div id="mpWaitingView" style="display:none;">
+        <h3 style="font-size:26px; margin-bottom:8px;">Room <span id="mpRoomCodeDisplay" class="mono"></span></h3>
+        <p style="font-size:13px; opacity:0.75;">Share this code with your opponent. Waiting for them to join…</p>
+      </div>
+    </div>
+
+    <div id="leaderboardMpSection" style="margin-top:36px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+        <h3 style="font-size:28px;">Rankings</h3>
+        <div class="diff-row" id="lbPeriodTabs" style="grid-template-columns:repeat(5,auto); gap:8px; margin-top:0;">
+          <button class="btn btn-ghost lb-tab active" data-period="week" style="padding:8px 16px; font-size:12px;">Week</button>
+          <button class="btn btn-ghost lb-tab" data-period="month" style="padding:8px 16px; font-size:12px;">Month</button>
+          <button class="btn btn-ghost lb-tab" data-period="year" style="padding:8px 16px; font-size:12px;">Year</button>
+          <button class="btn btn-ghost lb-tab" data-period="alltime" style="padding:8px 16px; font-size:12px;">All-Time</button>
+          <button class="btn btn-ghost lb-tab" data-period="elo" style="padding:8px 16px; font-size:12px;">ELO</button>
+        </div>
+      </div>
+      <table class="lb-table">
+        <thead id="mpLbHead">
+          <tr><th>Rank</th><th>Name</th><th>Top Score</th></tr>
+        </thead>
+        <tbody id="mpLbBody"></tbody>
+      </table>
+      <div id="mpLbEmpty" class="lb-empty" style="display:none;">No ranked matches played in this period yet.</div>
+    </div>
+
+    <div class="diff-row" id="diffRow">
+      <div class="diff-card active" data-diff="easy">
+        <svg class="avatar" viewBox="0 0 64 64"><use href="#char-easy"/></svg>
+        <span class="diff-tag">Easy</span>
+        <div class="diff-name">The Rookie</div>
+        <p class="diff-blurb">Throws whatever comes to mind. No memory, no malice.</p>
+      </div>
+      <div class="diff-card" data-diff="medium">
+        <svg class="avatar" viewBox="0 0 64 64"><use href="#char-medium"/></svg>
+        <span class="diff-tag">Medium</span>
+        <div class="diff-name">The Local</div>
+        <p class="diff-blurb">Notices what you keep throwing and leans away from it.</p>
+      </div>
+      <div class="diff-card" data-diff="hard">
+        <svg class="avatar" viewBox="0 0 64 64"><use href="#char-hard"/></svg>
+        <span class="diff-tag">Hard</span>
+        <div class="diff-name">The Veteran</div>
+        <p class="diff-blurb">Studies your patterns and strikes at your favorite number.</p>
+      </div>
+      <div class="diff-card" data-diff="impossible">
+        <svg class="avatar" viewBox="0 0 64 64"><use href="#char-impossible"/></svg>
+        <span class="diff-tag">Impossible</span>
+        <div class="diff-name">The Oracle</div>
+        <p class="diff-blurb">Reads you like a book. Rarely wrong, never rattled.</p>
+      </div>
+    </div>
+    <p class="note-box">Higher difficulties track the frequency of numbers you've thrown and lean toward the number most likely to get you out (or, when the bot bats, the number least likely to give you a wicket).</p>
+    <div class="hero-ctas" style="margin-top:22px;">
+      <button class="btn btn-primary" id="startMatchBtn">Start Match</button>
+    </div>
+  </div>
+</section>
+
+<section id="arena" style="background:var(--pitch-deep); padding-top:0;">
+  <div class="wrap" style="padding-top:76px;">
+    <div class="sec-head" style="border-bottom-color:rgba(246,241,228,0.14);">
+      <span class="sec-num" style="color:var(--floodlight);">02</span>
+      <h2 style="color:var(--chalk);">The middle</h2>
+      <p style="color:rgba(246,241,228,0.55);">Pick your number. Bot picks blind, same instant.</p>
+    </div>
+
+    <div class="arena">
+      <div class="stadium-layer" id="stadiumLayer">
+        <div class="floodlight fl-left"></div>
+        <div class="floodlight fl-right"></div>
+        <div class="crowd-strip"></div>
+      </div>
+      <div id="tossPanel" class="toss-panel">
+        <h3>Call it in the air</h3>
+        <p style="opacity:0.7">Win the toss, choose to bat or bowl first.</p>
+        <div class="opts">
+          <button class="btn btn-ghost" id="tossHeadsBtn">Heads</button>
+          <button class="btn btn-ghost" id="tossTailsBtn">Tails</button>
+        </div>
+      </div>
+
+      <div id="choicePanel" class="result-panel" style="display:none;">
+        <h3 id="choiceTitle">You won the toss</h3>
+        <div class="opts">
+          <button class="btn btn-primary" id="chooseBatBtn">Bat First</button>
+          <button class="btn btn-primary" id="chooseBowlBtn">Bowl First</button>
+        </div>
+      </div>
+
+      <div id="playPanel" style="display:none;">
+        <div class="arena-top">
+          <div class="status" id="statusLine">INNINGS 1 · YOU BAT</div>
+          <div class="status" id="ballLine">BALL 1 / 30</div>
+        </div>
+
+        <div class="players">
+          <div class="player-box">
+            <div class="who">You</div>
+            <div class="hand" id="youHand">✊</div>
+          </div>
+          <div class="vs">VS</div>
+          <div class="player-box">
+            <div class="who" id="botWho">Bot</div>
+            <svg class="bot-avatar-badge" id="botAvatarBadge" data-diff="easy" viewBox="0 0 64 64"><use id="botAvatarUse" href="#char-easy"/></svg>
+            <div class="hand" id="botHand">✊</div>
+          </div>
+        </div>
+
+        <div class="scoreboard" style="margin-bottom:24px;">
+          <div class="sb-label"><span id="sbTeam">YOUR INNINGS</span><span>WKT <span id="wkts">0</span>/1</span></div>
+          <div class="stat-board">
+            <div class="stat-block">
+              <span class="stat-label">Runs</span>
+              <div class="stat-stars" id="scoreStars">☆☆☆☆☆</div>
+              <div class="stat-value" id="scoreValue">0</div>
+            </div>
+            <div class="stat-block">
+              <span class="stat-label">Overs</span>
+              <div class="stat-value" id="oversValue" style="font-size:30px; padding-top:14px;">0.0</div>
+            </div>
+            <div class="stat-block">
+              <span class="stat-label">Target</span>
+              <div class="stat-value" id="targetLbl" style="font-size:30px; padding-top:14px;">—</div>
+            </div>
+          </div>
+          <div class="sb-meta"><span>BALLS <b id="ballsUsed">0</b>/<b>30</b></span><span>STRIKE RATE <b id="srLbl">—</b></span></div>
+        </div>
+
+        <div class="numpad" id="numpad"></div>
+
+        <div class="commentary" id="commentary"></div>
+      </div>
+
+      <div id="finalPanel" class="result-panel" style="display:none;">
+        <h3 id="finalTitle">Result</h3>
+        <p id="finalSub" style="opacity:0.75; margin-bottom:6px;"></p>
+        <div class="opts">
+          <button class="btn btn-primary" id="saveScoreBtn">Save to Leaderboard</button>
+          <button class="btn btn-ghost" id="playAgainBtn">Play Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="leaderboard">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <h2>Leaderboard</h2>
+      <p>Sorted by highest individual innings. Stored in this browser only.</p>
+    </div>
+    <table class="lb-table">
+      <thead>
+        <tr><th>Rank</th><th>Name</th><th>High Score</th><th>Wins</th><th>Balls Faced</th><th>Strike Rate</th></tr>
+      </thead>
+      <tbody id="lbBody"></tbody>
+    </table>
+    <div id="lbEmpty" class="lb-empty" style="display:none;">No innings on the board yet — play a match and save your score.</div>
+  </div>
+</section>
+
+<section id="reviews" style="background:#fff;">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <h2>Reviews</h2>
+      <p>Rate the game, leave a note for the next player. Saved in this browser only.</p>
+    </div>
+
+    <div class="review-form">
+      <input type="text" id="revName" placeholder="Your name">
+      <div class="stars" id="revStars">
+        <span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span>
+      </div>
+      <textarea id="revText" class="full" placeholder="What did you think?"></textarea>
+      <button class="btn btn-primary full" style="justify-self:start;" id="postReviewBtn">Post Review</button>
+    </div>
+
+    <div class="reviews-grid" id="reviewsGrid"></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p><b>HANDDOWN</b> — a client-side hand cricket game. Scores and reviews are saved in your browser's local storage, not a shared database.</p>
+  </div>
+</footer>
+
+<script>
+/* =========================================================
+   STATE
+========================================================= */
+let selectedMode = 'bot';
+let selectedDiff = 'easy';
+let match = null; // active match state
+let playerHistory = []; // numbers the human has thrown, across the session, for bot AI
+
+const BALLS_PER_INNINGS = 30;
+
+/* =========================================================
+   NAV / MODE SELECTION
+========================================================= */
+document.getElementById('modesGrid').addEventListener('click', (e)=>{
+  const card = e.target.closest('.mode-card');
+  if(!card || card.classList.contains('disabled')) return;
+  document.querySelectorAll('.mode-card').forEach(c=>c.classList.remove('selected'));
+  card.classList.add('selected');
+  selectedMode = card.dataset.mode;
+  document.getElementById('diffRow').style.display = (selectedMode==='practice' || selectedMode==='multiplayer') ? 'none' : 'grid';
+  if(selectedMode !== 'multiplayer') document.getElementById('mpPanel').style.display = 'none';
+});
+
+document.getElementById('diffRow').addEventListener('click', (e)=>{
+  const card = e.target.closest('.diff-card');
+  if(!card) return;
+  document.querySelectorAll('.diff-card').forEach(c=>c.classList.remove('active'));
+  card.classList.add('active');
+  selectedDiff = card.dataset.diff;
+  updateBotAvatar();
+});
+
+function updateBotAvatar(){
+  const diff = selectedMode==='practice' ? 'easy' : selectedDiff;
+  const use = document.getElementById('botAvatarUse');
+  if(use) use.setAttribute('href', '#char-' + diff);
+  const badge = document.getElementById('botAvatarBadge');
+  if(badge) badge.setAttribute('data-diff', diff);
+}
+
+document.getElementById('modeToggle').addEventListener('click', ()=>{
+  document.body.classList.toggle('dark');
+  document.getElementById('modeToggle').textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+});
+
+function startPractice(){
+  selectedMode = 'practice';
+  document.querySelectorAll('.mode-card').forEach(c=>c.classList.remove('selected'));
+  document.querySelector('[data-mode="practice"]').classList.add('selected');
+  document.getElementById('modes').scrollIntoView();
+}
+
+/* =========================================================
+   BOT AI
+   Uses frequency of the player's historical throws to bias
+   its own pick. Higher difficulty = stronger bias.
+========================================================= */
+function botPick(role){
+  // role: 'bowling' (bot wants to match player to get them out)
+  //       'batting' (bot wants to avoid matching player's number)
+  if(selectedDiff === 'easy' || playerHistory.length < 3){
+    return 1 + Math.floor(Math.random()*6);
+  }
+  const freq = [0,0,0,0,0,0,0]; // index 1-6
+  playerHistory.forEach(n => freq[n]++);
+  const mostLikely = freq.indexOf(Math.max(...freq.slice(1))) || (1+Math.floor(Math.random()*6));
+
+  const biasStrength = {medium:0.35, hard:0.6, impossible:0.85}[selectedDiff] ?? 0.35;
+
+  if(Math.random() < biasStrength){
+    if(role === 'bowling') return mostLikely;
+    // batting: avoid the number the player throws most often
+    let n;
+    do{ n = 1 + Math.floor(Math.random()*6); } while(n === mostLikely && Math.random() < 0.7);
+    return n;
+  }
+  return 1 + Math.floor(Math.random()*6);
+}
+
+/* =========================================================
+   MATCH FLOW
+========================================================= */
+function beginMatch(){
+  document.getElementById('arena').scrollIntoView({behavior:'smooth'});
+  if(selectedMode === 'multiplayer'){
+    document.getElementById('tossPanel').style.display = 'none';
+    document.getElementById('choicePanel').style.display = 'none';
+    document.getElementById('playPanel').style.display = 'none';
+    document.getElementById('finalPanel').style.display = 'none';
+    document.getElementById('mpPanel').style.display = 'block';
+    return;
+  }
+  document.getElementById('mpPanel').style.display = 'none';
+  resetMatch();
+}
+
+function resetMatch(){
+  match = {
+    mode: selectedMode,
+    diff: selectedMode==='practice' ? 'easy' : selectedDiff,
+    tossWinner: null,
+    userRole: null, // 'bat' or 'bowl' for innings 1
+    innings: 1,
+    target: null,
+    score: 0,
+    wkts: 0,
+    balls: 0,
+    battingSide: null, // 'you' or 'bot' currently batting
+    gameOver: false,
+    firstInningsSummary: null,
+    tournamentGame: 1,
+    tournamentScores: [],
+    locked: false
+  };
+  document.getElementById('tossPanel').style.display = 'block';
+  document.getElementById('choicePanel').style.display = 'none';
+  document.getElementById('playPanel').style.display = 'none';
+  document.getElementById('finalPanel').style.display = 'none';
+  document.getElementById('commentary').innerHTML = '';
+  const use = document.getElementById('botAvatarUse');
+  const badge = document.getElementById('botAvatarBadge');
+  const who = document.getElementById('botWho');
+  if(use) use.setAttribute('href', '#char-' + match.diff);
+  if(badge) badge.setAttribute('data-diff', match.diff);
+  if(who) who.textContent = 'Bot · ' + (CHAR_NAMES[match.diff] || '');
+}
+
+const CHAR_NAMES = {easy:'The Rookie', medium:'The Local', hard:'The Veteran', impossible:'The Oracle'};
+
+function callToss(call){
+  const flip = Math.random() < 0.5 ? 'heads' : 'tails';
+  const won = flip === call;
+  match.tossWinner = won ? 'you' : 'bot';
+  document.getElementById('tossPanel').style.display = 'none';
+
+  if(won){
+    document.getElementById('choicePanel').style.display = 'block';
+    document.getElementById('choiceTitle').textContent = `Toss was ${flip.toUpperCase()} — you won!`;
+  } else {
+    // bot decides
+    const botChoice = Math.random() < 0.5 ? 'bat' : 'bowl';
+    match.userRole = botChoice === 'bat' ? 'bowl' : 'bat';
+    document.getElementById('finalPanel').style.display = 'none';
+    logLine(`Toss was <b>${flip.toUpperCase()}</b>. Bot won and chose to ${botChoice} first.`);
+    startInnings();
+  }
+}
+
+function chooseRole(role){
+  match.userRole = role;
+  document.getElementById('choicePanel').style.display = 'none';
+  logLine(`You won the toss and chose to <b>${role}</b> first.`);
+  startInnings();
+}
+
+function startInnings(){
+  match.battingSide = (match.innings === 1)
+    ? (match.userRole === 'bat' ? 'you' : 'bot')
+    : (match.userRole === 'bat' ? 'bot' : 'you');
+
+  match.score = 0; match.wkts = 0; match.balls = 0;
+  match.locked = false;
+  document.getElementById('playPanel').style.display = 'block';
+  document.getElementById('finalPanel').style.display = 'none';
+  buildNumpad();
+  renderScore();
+  updateStatus();
+}
+
+function disableNumpad(){
+  document.querySelectorAll('#numpad .numbtn').forEach(b => b.disabled = true);
+}
+
+function updateStatus(){
+  const battingLabel = match.battingSide === 'you' ? 'YOU BAT' : 'BOT BATS';
+  document.getElementById('statusLine').textContent = `INNINGS ${match.innings} · ${battingLabel}`;
+  document.getElementById('ballLine').textContent = `BALL ${match.balls} / ${BALLS_PER_INNINGS}`;
+  document.getElementById('sbTeam').textContent = match.battingSide === 'you' ? 'YOUR INNINGS' : "BOT'S INNINGS";
+  document.getElementById('targetLbl').textContent = match.innings === 2 ? match.target : '—';
+}
+
+function buildNumpad(onPick){
+  const pad = document.getElementById('numpad');
+  pad.innerHTML = '';
+  const handler = onPick || playBall;
+  for(let i=1;i<=6;i++){
+    const b = document.createElement('button');
+    b.className = 'numbtn';
+    b.textContent = i;
+    b.addEventListener('click', (e)=>{
+      fireNumButtonFx(b, e);
+      handler(i);
+    });
+    pad.appendChild(b);
+  }
+}
+
+/* ---- ripple + glow pulse + synthesized click sound for number buttons ---- */
+let audioCtx = null;
+function playClickTone(){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(520, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(220, audioCtx.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.16, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.16);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.17);
+  }catch(e){ /* audio not available — silently skip, gameplay still works */ }
+}
+
+function fireNumButtonFx(btn, evt){
+  const rect = btn.getBoundingClientRect();
+  const ripple = document.createElement('span');
+  ripple.className = 'ripple';
+  const size = rect.width;
+  const x = (evt.clientX ?? rect.left + rect.width/2) - rect.left - size/2;
+  const y = (evt.clientY ?? rect.top + rect.height/2) - rect.top - size/2;
+  ripple.style.width = ripple.style.height = size + 'px';
+  ripple.style.left = x + 'px';
+  ripple.style.top = y + 'px';
+  btn.appendChild(ripple);
+  setTimeout(()=> ripple.remove(), 600);
+
+  btn.classList.remove('fired'); void btn.offsetWidth; btn.classList.add('fired');
+  playClickTone();
+}
+
+function playBall(userNum){
+  if(match.gameOver || match.locked) return;
+  if(match.battingSide === 'you' || match.userRole !== null){
+    // player always inputs their own number, regardless of batting/bowling,
+    // since in hand cricket both sides throw a number every ball
+  }
+  playerHistory.push(userNum);
+  const role = match.battingSide === 'you' ? 'batting' : 'bowling';
+  const botNum = botPick(role === 'batting' ? 'bowling' : 'batting'); // bot's role is opposite of user's
+
+  document.getElementById('youHand').textContent = handEmoji(userNum);
+  document.getElementById('botHand').textContent = handEmoji(botNum);
+
+  match.balls++;
+  const out = (userNum === botNum);
+
+  if(out){
+    match.wkts = 1;
+    logLine(`Both threw <b>${userNum}</b> — <b>WICKET!</b>`);
+  } else {
+    const runs = (match.battingSide === 'you') ? userNum : botNum;
+    match.score += runs;
+    logLine(`You: <b>${userNum}</b> · Bot: <b>${botNum}</b> — ${runs} run${runs===1?'':'s'} to ${match.battingSide==='you'?'you':'the bot'}.`);
+  }
+
+  renderScore(true);
+  updateStatus();
+  checkInningsEnd(out);
+}
+
+function handEmoji(n){
+  const map = {1:'☝️',2:'✌️',3:'🤟',4:'🖖',5:'🖐️',6:'👊'};
+  return map[n] || '✊';
+}
+
+function checkInningsEnd(justOut){
+  const target = match.target;
+  const chaseWon = match.innings === 2 && match.score >= target;
+  const oversDone = match.balls >= BALLS_PER_INNINGS;
+
+  if(chaseWon){
+    return endMatch(match.battingSide === 'you' ? 'you' : 'bot', 'chase');
+  }
+  if(justOut || oversDone){
+    if(match.innings === 1){
+      match.firstInningsSummary = {runs: match.score, side: match.battingSide};
+      match.target = match.score + 1;
+      match.innings = 2;
+      match.locked = true;
+      disableNumpad();
+      logLine(`Innings over. ${match.battingSide==='you'?'You scored':'Bot scored'} <b>${match.score}</b>. Target: <b>${match.target}</b>.`);
+      setTimeout(startInnings, 900);
+    } else {
+      // second innings ended without reaching target
+      const winner = match.score >= target ? match.battingSide : (match.battingSide === 'you' ? 'bot' : 'you');
+      endMatch(winner, justOut ? 'wicket' : 'overs');
+    }
+  }
+}
+
+function endMatch(winner, reason){
+  match.gameOver = true;
+  document.getElementById('playPanel').style.display = 'none';
+  document.getElementById('finalPanel').style.display = 'block';
+
+  const you = winner === 'you';
+  document.getElementById('finalTitle').textContent = you ? 'You won! 🏆' : 'Bot wins this one.';
+  let reasonText = reason === 'chase' ? 'Chased the target down.' : (reason === 'wicket' ? 'Wicket sealed it.' : 'Overs ran out.');
+  const yourInningsRuns = (match.firstInningsSummary?.side === 'you') ? match.firstInningsSummary.runs
+                          : (match.battingSide === 'you' ? match.score : (match.target - 1));
+  document.getElementById('finalSub').textContent = `${reasonText} Your best individual innings this match: ${Math.max(match.firstInningsSummary?.side==='you'?match.firstInningsSummary.runs:0, match.battingSide==='you'?match.score:0)} runs.`;
+
+  if(match.mode === 'tournament'){
+    match.tournamentScores.push(match.battingSide==='you'?match.score:(match.firstInningsSummary?.side==='you'?match.firstInningsSummary.runs:0));
+    logLine(`<b>Match ${match.tournamentGame} of 3 complete.</b>`);
+  }
+
+  lastResult = {
+    won: you,
+    highScore: Math.max(match.firstInningsSummary?.side==='you' ? match.firstInningsSummary.runs : 0, match.battingSide==='you' ? match.score : 0),
+    ballsFaced: match.balls,
+    diff: match.diff,
+    reason: reason
+  };
+  checkDailyChallenge(lastResult);
+}
+
+let lastResult = null;
+
+function oversNotation(balls){ return Math.floor(balls/6) + '.' + (balls%6); }
+function starRating(score, balls){
+  if(balls === 0) return 3; // neutral starting rating
+  const sr = (score/balls) * 100;
+  if(sr >= 200) return 5;
+  if(sr >= 150) return 4;
+  if(sr >= 100) return 3;
+  if(sr >= 50) return 2;
+  return 1;
+}
+function starString(n){ return '★'.repeat(n) + '☆'.repeat(5-n); }
+
+function renderScore(flip){
+  const scoreEl = document.getElementById('scoreValue');
+  scoreEl.textContent = match.score;
+  if(flip){ scoreEl.classList.remove('pop'); void scoreEl.offsetWidth; scoreEl.classList.add('pop'); }
+  document.getElementById('scoreStars').textContent = starString(starRating(match.score, match.balls));
+  document.getElementById('oversValue').textContent = oversNotation(match.balls);
+  document.getElementById('wkts').textContent = match.wkts;
+  document.getElementById('ballsUsed').textContent = match.balls;
+  document.getElementById('srLbl').textContent = match.balls > 0 ? ((match.score/match.balls)*100).toFixed(1) : '—';
+}
+
+function logLine(html){
+  const c = document.getElementById('commentary');
+  const p = document.createElement('p');
+  p.innerHTML = html;
+  c.appendChild(p);
+  c.scrollTop = c.scrollHeight;
+}
+
+/* =========================================================
+   LEADERBOARD (localStorage — per-browser, for standalone
+   hosting outside Claude. Swap for a real backend/Firebase
+   if you want a leaderboard shared across visitors.)
+========================================================= */
+async function getLB(){
+  try{ return JSON.parse(localStorage.getItem('hd_leaderboard') || '[]'); }
+  catch(e){ return []; }
+}
+async function setLB(arr){
+  try{ localStorage.setItem('hd_leaderboard', JSON.stringify(arr)); }
+  catch(e){ console.error('Leaderboard save failed:', e); }
+}
+
+async function saveToLeaderboard(){
+  if(!lastResult) return;
+  const name = (prompt('Name for the leaderboard:', 'Player') || 'Player').slice(0, 40);
+  const btn = document.getElementById('saveScoreBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  const lb = await getLB();
+  let entry = lb.find(e => e.name.toLowerCase() === name.toLowerCase());
+  if(!entry){
+    entry = {name, highScore:0, wins:0, ballsFaced:0, runsTotal:0};
+    lb.push(entry);
+  }
+  entry.highScore = Math.max(entry.highScore, lastResult.highScore);
+  entry.wins += lastResult.won ? 1 : 0;
+  entry.ballsFaced += lastResult.ballsFaced;
+  entry.runsTotal += lastResult.highScore;
+  await setLB(lb);
+  btn.disabled = false; btn.textContent = 'Save to Leaderboard';
+  await renderLeaderboard();
+  document.getElementById('leaderboard').scrollIntoView({behavior:'smooth'});
+}
+
+async function renderLeaderboard(){
+  const body = document.getElementById('lbBody');
+  const empty = document.getElementById('lbEmpty');
+  body.innerHTML = '<tr><td colspan="6" class="lb-empty" style="padding:16px;">Loading…</td></tr>';
+  empty.style.display = 'none';
+  let lb;
+  try{ lb = (await getLB()).sort((a,b)=> b.highScore - a.highScore); }
+  catch(e){ body.innerHTML=''; empty.style.display='block'; empty.textContent='Could not load the leaderboard right now.'; return; }
+  body.innerHTML = '';
+  if(lb.length === 0){ empty.style.display='block'; empty.textContent='No innings on the board yet — play a match and save your score.'; return; }
+  empty.style.display='none';
+  lb.forEach((e,i)=>{
+    const sr = e.ballsFaced > 0 ? ((e.runsTotal / e.ballsFaced) * 100).toFixed(1) : '0.0';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="lb-rank">#${i+1}</td><td>${escapeHtml(e.name)}</td><td>${e.highScore}</td><td>${e.wins}</td><td>${e.ballsFaced}</td><td>${sr}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+/* =========================================================
+   REVIEWS (persistent, shared across everyone who opens this
+   artifact's link; "which reviews I've liked" stays personal
+   to this visitor so double-likes are prevented)
+========================================================= */
+let currentRating = 0;
+document.getElementById('revStars').addEventListener('click', (e)=>{
+  const s = e.target.closest('span');
+  if(!s) return;
+  currentRating = parseInt(s.dataset.v, 10);
+  renderStarsInput();
+});
+function renderStarsInput(){
+  document.querySelectorAll('#revStars span').forEach(s=>{
+    s.classList.toggle('on', parseInt(s.dataset.v,10) <= currentRating);
+  });
+}
+
+async function getReviews(){
+  try{ return JSON.parse(localStorage.getItem('hd_reviews') || '[]'); }
+  catch(e){ return []; }
+}
+async function setReviews(arr){
+  try{ localStorage.setItem('hd_reviews', JSON.stringify(arr)); }
+  catch(e){ console.error('Review save failed:', e); }
+}
+async function getLikedIds(){
+  try{ return JSON.parse(localStorage.getItem('hd_liked_reviews') || '[]'); }
+  catch(e){ return []; }
+}
+async function setLikedIds(arr){
+  try{ localStorage.setItem('hd_liked_reviews', JSON.stringify(arr)); }
+  catch(e){ console.error('Liked-reviews save failed:', e); }
+}
+
+async function submitReview(){
+  const name = document.getElementById('revName').value.trim() || 'Anonymous';
+  const text = document.getElementById('revText').value.trim();
+  if(!text){ alert('Write a comment before posting.'); return; }
+  if(currentRating === 0){ alert('Pick a star rating.'); return; }
+  const btn = document.getElementById('postReviewBtn');
+  btn.disabled = true; btn.textContent = 'Posting…';
+  const reviews = await getReviews();
+  reviews.unshift({id: Date.now(), name, rating: currentRating, text, likes: 0});
+  await setReviews(reviews);
+  btn.disabled = false; btn.textContent = 'Post Review';
+  document.getElementById('revName').value = '';
+  document.getElementById('revText').value = '';
+  currentRating = 0;
+  renderStarsInput();
+  await renderReviews();
+}
+
+async function renderReviews(){
+  const grid = document.getElementById('reviewsGrid');
+  grid.innerHTML = '<div class="lb-empty">Loading…</div>';
+  let reviews, liked;
+  try{
+    [reviews, liked] = await Promise.all([getReviews(), getLikedIds()]);
+  }catch(e){
+    grid.innerHTML = '<div class="lb-empty">Could not load reviews right now.</div>';
+    return;
+  }
+  grid.innerHTML = '';
+  if(reviews.length === 0){
+    grid.innerHTML = '<div class="lb-empty">No reviews yet — be the first to rate the game.</div>';
+    return;
+  }
+  reviews.forEach(r=>{
+    const alreadyLiked = liked.includes(r.id);
+    const card = document.createElement('div');
+    card.className = 'review-card';
+    card.innerHTML = `
+      <div class="rc-top">
+        <span class="rc-name">${escapeHtml(r.name)}</span>
+        <span class="rc-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span>
+      </div>
+      <p>${escapeHtml(r.text)}</p>
+      <button class="like-btn${alreadyLiked ? ' liked' : ''}" data-id="${r.id}">♥ ${r.likes}</button>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+document.getElementById('reviewsGrid').addEventListener('click', async (e)=>{
+  const btn = e.target.closest('.like-btn');
+  if(!btn || btn.classList.contains('liked')) return;
+  const id = parseInt(btn.dataset.id, 10);
+  btn.disabled = true;
+  const [reviews, liked] = await Promise.all([getReviews(), getLikedIds()]);
+  if(liked.includes(id)){ btn.disabled = false; return; }
+  const r = reviews.find(x=>x.id === id);
+  if(!r){ btn.disabled = false; return; }
+  r.likes++;
+  liked.push(id);
+  await Promise.all([setReviews(reviews), setLikedIds(liked)]);
+  btn.disabled = false;
+  await renderReviews();
+});
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+/* =========================================================
+   NIGHT STADIUM BACKGROUND — crowd twinkle dots + floating particles
+========================================================= */
+function initStadiumLayer(){
+  const layer = document.getElementById('stadiumLayer');
+  if(!layer) return;
+  // crowd twinkle dots scattered along the top strip
+  for(let i=0;i<26;i++){
+    const dot = document.createElement('div');
+    dot.className = 'crowd-dot';
+    dot.style.left = Math.random()*100 + '%';
+    dot.style.top = (4 + Math.random()*20) + 'px';
+    dot.style.animationDelay = (Math.random()*3.2) + 's';
+    layer.appendChild(dot);
+  }
+  // floating light particles drifting up through the arena
+  for(let i=0;i<16;i++){
+    const p = document.createElement('div');
+    p.className = 'arena-particle';
+    const size = 2 + Math.random()*3;
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+    p.style.left = Math.random()*100 + '%';
+    p.style.setProperty('--drift', (Math.random()*40 - 20) + 'px');
+    p.style.animationDuration = (7 + Math.random()*8) + 's';
+    p.style.animationDelay = (Math.random()*10) + 's';
+    layer.appendChild(p);
+  }
+}
+initStadiumLayer();
+
+/* =========================================================
+   HERO STAT-BOARD AMBIENT ANIMATION (a fake looping demo innings,
+   purely decorative — not tied to any real match)
+========================================================= */
+let heroDemo = { balls: 0, score: 0, target: null };
+function heroDemoTick(){
+  heroDemo.balls++;
+  heroDemo.score += 1 + Math.floor(Math.random()*6);
+  if(heroDemo.balls === 18) heroDemo.target = heroDemo.score + 20 + Math.floor(Math.random()*15);
+  if(heroDemo.balls > 30) heroDemo = { balls: 0, score: 0, target: null };
+
+  const runsEl = document.getElementById('heroRuns');
+  if(!runsEl) return; // guard in case this ever runs before the hero markup exists
+  runsEl.textContent = heroDemo.score;
+  runsEl.classList.remove('pop'); void runsEl.offsetWidth; runsEl.classList.add('pop');
+  document.getElementById('heroStars').textContent = starString(starRating(heroDemo.score, heroDemo.balls));
+  document.getElementById('heroOvers').textContent = oversNotation(heroDemo.balls);
+  document.getElementById('heroTarget').textContent = heroDemo.target ?? '—';
+}
+setInterval(heroDemoTick, 1800);
+
+/* =========================================================
+   LIVE PLAYERS ONLINE
+   This build has no real backend to report actual presence, so
+   this is a gently-fluctuating ambient number for stadium atmosphere,
+   not a real headcount. (The multiplayer server build reports a
+   real connected-player count instead — see that companion project.)
+========================================================= */
+function tickLivePlayers(){
+  const el = document.getElementById('livePlayersCount');
+  if(!el) return;
+  if(window.__liveBase == null) window.__liveBase = 80 + Math.floor(Math.random()*40);
+  window.__liveBase += Math.floor(Math.random()*7) - 3;
+  window.__liveBase = Math.max(40, Math.min(220, window.__liveBase));
+  el.textContent = window.__liveBase;
+}
+
+/* =========================================================
+   DAILY CHALLENGE
+   Same challenge for everyone on a given calendar day (picked by
+   day-of-year, so it rotates without needing a server). Progress
+   is saved in this browser's localStorage (per-device, not shared).
+========================================================= */
+const DAILY_CHALLENGES = [
+  { id:'score30',  desc:'Score 30+ runs in a single innings.', check:(r)=> r.highScore >= 30 },
+  { id:'winHard',  desc:'Beat The Veteran (Hard) or The Oracle (Impossible) bot.', check:(r)=> r.won && (r.diff==='hard' || r.diff==='impossible') },
+  { id:'chaseWin', desc:'Win a match by chasing the target down.', check:(r)=> r.won && r.reason === 'chase' },
+  { id:'fifty',    desc:'Score 50+ runs in a single innings.', check:(r)=> r.highScore >= 50 }
+];
+
+function getDayIndex(){
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  return Math.floor((now - start) / (1000*60*60*24));
+}
+function getTodayChallenge(){
+  return DAILY_CHALLENGES[getDayIndex() % DAILY_CHALLENGES.length];
+}
+
+async function loadDailyChallengeState(){
+  const todayStr = new Date().toISOString().slice(0,10);
+  const challenge = getTodayChallenge();
+  const textEl = document.getElementById('dailyChallengeText');
+  if(textEl) textEl.textContent = challenge.desc;
+
+  let completed = false;
+  try{
+    const raw = localStorage.getItem('hd_daily_challenge_progress');
+    if(raw){
+      const data = JSON.parse(raw);
+      if(data.date === todayStr && data.id === challenge.id) completed = !!data.completed;
+    }
+  }catch(e){ /* nothing saved yet — that's fine */ }
+
+  window.__dailyChallenge = { challenge, todayStr, completed };
+  renderDailyChallengeStatus(completed);
+}
+
+function renderDailyChallengeStatus(completed){
+  const el = document.getElementById('dailyChallengeStatus');
+  if(!el) return;
+  el.textContent = completed ? '✓ Completed today' : 'Not completed yet';
+  el.style.color = completed ? 'var(--easy-a)' : 'rgba(246,241,228,0.6)';
+}
+
+async function checkDailyChallenge(result){
+  if(!window.__dailyChallenge) return;
+  const { challenge, todayStr, completed } = window.__dailyChallenge;
+  if(completed) return;
+  if(!challenge.check(result)) return;
+
+  window.__dailyChallenge.completed = true;
+  renderDailyChallengeStatus(true);
+  logLine(`🏆 <b>Daily challenge complete!</b> ${escapeHtml(challenge.desc)}`);
+  try{
+    localStorage.setItem('hd_daily_challenge_progress', JSON.stringify({ date: todayStr, id: challenge.id, completed: true }));
+  }catch(e){ console.error('Could not save daily challenge progress:', e); }
+}
+
+/* =========================================================
+   EVENT WIRING (no inline onclick attributes, so this works
+   even under strict CSP / sandboxed preview environments)
+========================================================= */
+document.getElementById('navPlayBtn').addEventListener('click', ()=> document.getElementById('modes').scrollIntoView());
+document.getElementById('heroPlayBtn').addEventListener('click', ()=> document.getElementById('modes').scrollIntoView());
+document.getElementById('heroPracticeBtn').addEventListener('click', startPractice);
+document.getElementById('startMatchBtn').addEventListener('click', beginMatch);
+document.getElementById('tossHeadsBtn').addEventListener('click', ()=> callToss('heads'));
+document.getElementById('tossTailsBtn').addEventListener('click', ()=> callToss('tails'));
+document.getElementById('chooseBatBtn').addEventListener('click', ()=> chooseRole('bat'));
+document.getElementById('chooseBowlBtn').addEventListener('click', ()=> chooseRole('bowl'));
+document.getElementById('saveScoreBtn').addEventListener('click', saveToLeaderboard);
+document.getElementById('playAgainBtn').addEventListener('click', resetMatch);
+document.getElementById('postReviewBtn').addEventListener('click', submitReview);
+document.getElementById('heroMatchmakeBtn').addEventListener('click', ()=>{
+  const card = document.querySelector('.mode-card[data-mode="multiplayer"]');
+  if(card){
+    document.querySelectorAll('.mode-card').forEach(c=>c.classList.remove('selected'));
+    card.classList.add('selected');
+    selectedMode = 'multiplayer';
+    document.getElementById('diffRow').style.display = 'none';
+  }
+  beginMatch();
+  setTimeout(()=> document.getElementById('mpNameInput')?.focus(), 400);
+});
+
+/* =========================================================
+   INIT
+========================================================= */
+resetMatch();
+renderLeaderboard();
+renderReviews();
+tickLivePlayers();
+setInterval(tickLivePlayers, 4000);
+loadDailyChallengeState();
+
+/* =========================================================
+   MULTIPLAYER CLIENT
+   Talks to the companion Socket.io server (server.js in the
+   same download).
+
+   MP_SERVER_URL auto-detects in the most common case: if server.js
+   is serving this very page (a combined deployment — e.g. one Render
+   service running both), it points at wherever this page itself was
+   loaded from. If you're opening this file locally (file:// or
+   localhost) it falls back to http://localhost:3001, matching
+   `npm start`'s default port. If you host the CLIENT and SERVER
+   separately (a split deployment), set MP_SERVER_URL_OVERRIDE below
+   instead of relying on auto-detection.
+
+   Ranked identity note: a player's name IS their ranked identity
+   on the server (no login system). Play under a consistent name
+   to keep your ELO and leaderboard history.
+========================================================= */
+const MP_SERVER_URL_OVERRIDE = null; // e.g. 'https://your-server.onrender.com' — set this for a split deployment
+const MP_SERVER_URL = MP_SERVER_URL_OVERRIDE || (
+  (location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'http://localhost:3001'
+    : location.origin
+);
+document.getElementById('mpServerUrlLabel').textContent = MP_SERVER_URL;
+
+const mp = { socket: null, myId: null, myName: null, code: null, state: null, inQueue: false };
+
+function mpLoadSocketIO(){
+  return new Promise((resolve, reject)=>{
+    if(window.io) return resolve();
+    const s = document.createElement('script');
+    s.src = MP_SERVER_URL + '/socket.io/socket.io.js';
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('Could not reach the multiplayer server at ' + MP_SERVER_URL));
+    document.head.appendChild(s);
+  });
+}
+
+async function mpEnsureConnected(){
+  if(mp.socket) return mp.socket;
+  await mpLoadSocketIO();
+  mp.socket = window.io(MP_SERVER_URL);
+  wireMpSocketEvents(mp.socket);
+  return mp.socket;
+}
+
+function mpSetStatus(msg){
+  const el = document.getElementById('mpStatusMsg');
+  if(el) el.textContent = msg;
+}
+
+// connect eagerly (for the live count + leaderboard) as soon as the
+// multiplayer panel is opened, without requiring a name yet
+document.getElementById('startMatchBtn').addEventListener('click', async ()=>{
+  if(selectedMode !== 'multiplayer') return;
+  try{
+    await mpEnsureConnected();
+    refreshMpLeaderboard();
+  }catch(e){ mpSetStatus(e.message); }
+});
+
+document.getElementById('mpCreateBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('mpNameInput').value.trim();
+  if(!name){ mpSetStatus('Enter a name first — it doubles as your ranked identity.'); return; }
+  mp.myName = name;
+  mpSetStatus('Connecting…');
+  try{
+    const socket = await mpEnsureConnected();
+    socket.emit('create-room', { name }, (res)=>{
+      if(!res.ok){ mpSetStatus(res.error || 'Could not create a room.'); return; }
+      mp.myId = res.playerId; mp.code = res.code; mp.state = res.state;
+      document.getElementById('mpConnectView').style.display = 'none';
+      document.getElementById('mpWaitingView').style.display = 'block';
+      document.getElementById('mpRoomCodeDisplay').textContent = res.code;
+    });
+  }catch(e){ mpSetStatus(e.message); }
+});
+
+document.getElementById('mpJoinBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('mpNameInput').value.trim();
+  const code = document.getElementById('mpJoinCodeInput').value.trim().toUpperCase();
+  if(!name){ mpSetStatus('Enter a name first — it doubles as your ranked identity.'); return; }
+  if(!code){ mpSetStatus('Enter a room code.'); return; }
+  mp.myName = name;
+  mpSetStatus('Connecting…');
+  try{
+    const socket = await mpEnsureConnected();
+    socket.emit('join-room', { name, code }, (res)=>{
+      if(!res.ok){ mpSetStatus(res.error || 'Could not join that room.'); return; }
+      mp.myId = res.playerId; mp.code = res.code; mp.state = res.state;
+      mpSetStatus('Joined room ' + res.code + '.');
+    });
+  }catch(e){ mpSetStatus(e.message); }
+});
+
+const mpQuickBtn = document.getElementById('mpQuickMatchBtn');
+if(mpQuickBtn){
+  mpQuickBtn.addEventListener('click', async ()=>{
+    const name = document.getElementById('mpNameInput').value.trim();
+    if(!name){ mpSetStatus('Enter a name first — it doubles as your ranked identity.'); return; }
+    mp.myName = name;
+    mpSetStatus('Searching for an opponent…');
+    mp.inQueue = true;
+    mpQuickBtn.disabled = true;
+    try{
+      const socket = await mpEnsureConnected();
+      socket.emit('quick-match', { name }, (res)=>{
+        if(!res.ok){ mpSetStatus(res.error || 'Could not start matchmaking.'); mpQuickBtn.disabled = false; return; }
+        if(res.matched){
+          mp.myId = res.playerId; mp.code = res.code; mp.state = res.state;
+          mpSetStatus('Opponent found!');
+        } else {
+          mpSetStatus('Waiting for an opponent to queue up…');
+        }
+      });
+    }catch(e){ mpSetStatus(e.message); mpQuickBtn.disabled = false; }
+  });
+}
+
+function mpOpponent(){
+  if(!mp.state) return null;
+  return mp.state.players.find(p => p.id !== mp.myId) || null;
+}
+
+function wireMpSocketEvents(socket){
+  socket.on('players-online', ({ count })=>{
+    const el = document.getElementById('mpLiveCount');
+    if(el) el.textContent = count + ' online';
+  });
+
+  socket.on('quick-match-found', ({ code, playerId, state })=>{
+    mp.myId = playerId; mp.code = code; mp.state = state;
+    if(mpQuickBtn) mpQuickBtn.disabled = false;
+    mpSetStatus('Opponent found!');
+  });
+
+  socket.on('room-ready', (state)=>{
+    mp.state = state;
+    document.getElementById('mpPanel').style.display = 'none';
+    document.getElementById('tossPanel').style.display = 'block';
+    const opp = mpOpponent();
+    logMpIntro(opp);
+    renderMpTossPanel();
+  });
+
+  socket.on('toss-result', ({ flip, winnerId, state })=>{
+    mp.state = state;
+    document.getElementById('tossPanel').style.display = 'none';
+    const iWon = winnerId === mp.myId;
+    if(iWon){
+      document.getElementById('choicePanel').style.display = 'block';
+      document.getElementById('choiceTitle').textContent = `Toss was ${flip.toUpperCase()} — you won!`;
+      wireMpChoiceButtons();
+    } else {
+      document.getElementById('choicePanel').style.display = 'block';
+      document.getElementById('choiceTitle').textContent = `Toss was ${flip.toUpperCase()} — opponent won. Waiting for their choice…`;
+      document.querySelector('#choicePanel .opts').style.display = 'none';
+    }
+  });
+
+  socket.on('innings-start', ({ state })=>{
+    mp.state = state;
+    document.getElementById('choicePanel').style.display = 'none';
+    document.querySelector('#choicePanel .opts').style.display = 'flex';
+    startMpInningsUI();
+  });
+
+  socket.on('opponent-threw', ()=>{
+    mpSetArenaStatus('Opponent has thrown. Your turn.');
+  });
+
+  socket.on('ball-result', ({ ball, state })=>{
+    mp.state = state;
+    const myNum = (ball.battingId === mp.myId) ? ball.battingNum : ball.bowlingNum;
+    const oppNum = (ball.battingId === mp.myId) ? ball.bowlingNum : ball.battingNum;
+    document.getElementById('youHand').textContent = handEmoji(myNum);
+    document.getElementById('botHand').textContent = handEmoji(oppNum);
+    renderMpScore(state, true);
+    if(ball.out){
+      logLine(`Both threw the same number — <b>WICKET!</b>`);
+    } else {
+      const whoScored = (ball.battingId === mp.myId) ? 'You' : 'Opponent';
+      logLine(`You: <b>${myNum}</b> · Opponent: <b>${oppNum}</b> — ${ball.runs} run${ball.runs===1?'':'s'} to ${whoScored.toLowerCase()}.`);
+    }
+    updateMpStatusLine(state);
+    mpReenableNumpad();
+  });
+
+  socket.on('innings-break', ({ target, firstInningsSummary, state })=>{
+    mp.state = state;
+    disableNumpad();
+    const whoScored = (firstInningsSummary.battingId === mp.myId) ? 'You' : 'Opponent';
+    logLine(`Innings over. ${whoScored} scored <b>${firstInningsSummary.runs}</b>. Target: <b>${target}</b>.`);
+    updateMpStatusLine(state);
+    setTimeout(()=>{ renderMpScore(state, false); mpReenableNumpad(); }, 900);
+  });
+
+  socket.on('match-over', ({ winnerId, reason, state })=>{
+    mp.state = state;
+    document.getElementById('playPanel').style.display = 'none';
+    document.getElementById('finalPanel').style.display = 'block';
+    const iWon = winnerId === mp.myId;
+    document.getElementById('finalTitle').textContent = iWon ? 'You won! 🏆' : 'Your opponent won this one.';
+    const reasonText = reason === 'chase' ? 'Chased the target down.' : (reason === 'wicket' ? 'Wicket sealed it.' : 'Overs ran out.');
+    document.getElementById('finalSub').textContent = reasonText + ' Checking your ELO update…';
+  });
+
+  socket.on('elo-update', ({ elo, delta, won, score })=>{
+    const sign = delta > 0 ? '+' : '';
+    const sub = document.getElementById('finalSub');
+    if(sub) sub.textContent = sub.textContent.replace('Checking your ELO update…', '') +
+      ` ELO ${sign}${delta} → ${elo}.`;
+    mpShowMyStats();
+    refreshMpLeaderboard();
+  });
+
+  socket.on('opponent-left', ()=>{
+    mpSetStatus('Your opponent disconnected.');
+    logLine('Opponent left the match.');
+    disableNumpad();
+  });
+}
+
+function logMpIntro(opp){
+  document.getElementById('commentary').innerHTML = '';
+  logLine(`Connected to <b>${opp ? escapeHtml(opp.name) : 'opponent'}</b>. Room ${mp.code}.`);
+}
+
+function renderMpTossPanel(){
+  const iAmCaller = mp.state.tossCallerId === mp.myId;
+  const opts = document.querySelector('#tossPanel .opts');
+  const heading = document.querySelector('#tossPanel h3');
+  if(iAmCaller){
+    heading.textContent = 'Call it in the air';
+    opts.style.display = 'flex';
+    wireMpTossButtons();
+  } else {
+    heading.textContent = "Opponent is calling the toss…";
+    opts.style.display = 'none';
+  }
+}
+
+function wireMpTossButtons(){
+  const headsBtn = document.getElementById('tossHeadsBtn');
+  const tailsBtn = document.getElementById('tossTailsBtn');
+  const newHeads = headsBtn.cloneNode(true); headsBtn.replaceWith(newHeads);
+  const newTails = tailsBtn.cloneNode(true); tailsBtn.replaceWith(newTails);
+  newHeads.addEventListener('click', ()=> mp.socket.emit('call-toss', { call:'heads' }, (res)=>{ if(!res.ok) mpSetStatus(res.error); }));
+  newTails.addEventListener('click', ()=> mp.socket.emit('call-toss', { call:'tails' }, (res)=>{ if(!res.ok) mpSetStatus(res.error); }));
+}
+
+function wireMpChoiceButtons(){
+  const batBtn = document.getElementById('chooseBatBtn');
+  const bowlBtn = document.getElementById('chooseBowlBtn');
+  const newBat = batBtn.cloneNode(true); batBtn.replaceWith(newBat);
+  const newBowl = bowlBtn.cloneNode(true); bowlBtn.replaceWith(newBowl);
+  newBat.addEventListener('click', ()=> mp.socket.emit('choose-role', { role:'bat' }, (res)=>{ if(!res.ok) mpSetStatus(res.error); }));
+  newBowl.addEventListener('click', ()=> mp.socket.emit('choose-role', { role:'bowl' }, (res)=>{ if(!res.ok) mpSetStatus(res.error); }));
+}
+
+function startMpInningsUI(){
+  document.getElementById('playPanel').style.display = 'block';
+  document.getElementById('finalPanel').style.display = 'none';
+  const badge = document.getElementById('botAvatarBadge');
+  if(badge) badge.style.display = 'none'; // no bot character in real multiplayer
+  const opp = mpOpponent();
+  document.getElementById('botWho').textContent = opp ? opp.name : 'Opponent';
+  buildNumpad(mpThrow);
+  renderMpScore(mp.state, false);
+  updateMpStatusLine(mp.state);
+}
+
+function mpThrow(n){
+  disableNumpad();
+  mpSetArenaStatus('Waiting for opponent…');
+  mp.socket.emit('throw-number', { n }, (res)=>{
+    if(!res.ok){ mpSetStatus(res.error); mpReenableNumpad(); }
+  });
+}
+
+function mpReenableNumpad(){
+  document.querySelectorAll('#numpad .numbtn').forEach(b => b.disabled = false);
+}
+
+function mpSetArenaStatus(msg){
+  const el = document.getElementById('ballLine');
+  if(el) el.textContent = msg;
+}
+
+function updateMpStatusLine(state){
+  const battingLabel = state.battingId === mp.myId ? 'YOU BAT' : 'OPPONENT BATS';
+  document.getElementById('statusLine').textContent = `INNINGS ${state.innings} · ${battingLabel}`;
+  document.getElementById('ballLine').textContent = `BALL ${state.balls} / 30`;
+  document.getElementById('sbTeam').textContent = state.battingId === mp.myId ? 'YOUR INNINGS' : "OPPONENT'S INNINGS";
+  document.getElementById('targetLbl').textContent = state.innings === 2 ? state.target : '—';
+}
+
+function renderMpScore(state, flip){
+  const scoreEl = document.getElementById('scoreValue');
+  scoreEl.textContent = state.score;
+  if(flip){ scoreEl.classList.remove('pop'); void scoreEl.offsetWidth; scoreEl.classList.add('pop'); }
+  document.getElementById('scoreStars').textContent = starString(starRating(state.score, state.balls));
+  document.getElementById('oversValue').textContent = oversNotation(state.balls);
+  document.getElementById('wkts').textContent = state.wkts;
+  document.getElementById('ballsUsed').textContent = state.balls;
+  document.getElementById('srLbl').textContent = state.balls > 0 ? ((state.score/state.balls)*100).toFixed(1) : '—';
+}
+
+/* ---- ELO / ranked stats ---- */
+async function mpShowMyStats(){
+  if(!mp.socket || !mp.myName) return;
+  mp.socket.emit('get-player-stats', { name: mp.myName }, (res)=>{
+    if(!res.ok || !res.stats) return;
+    const box = document.getElementById('mpMyStats');
+    if(!box) return;
+    box.style.display = 'block';
+    document.getElementById('mpMyElo').textContent = res.stats.elo;
+    document.getElementById('mpMyRank').textContent = '#' + res.stats.rank;
+    document.getElementById('mpMyRecord').textContent = `${res.stats.wins}W – ${res.stats.losses}L`;
+  });
+}
+
+/* ---- ranked leaderboard tabs (Week/Month/Year/All-Time/ELO) ---- */
+let mpActivePeriod = 'week';
+document.getElementById('lbPeriodTabs').addEventListener('click', (e)=>{
+  const tab = e.target.closest('.lb-tab');
+  if(!tab) return;
+  document.querySelectorAll('.lb-tab').forEach(t=>t.classList.remove('active'));
+  tab.classList.add('active');
+  mpActivePeriod = tab.dataset.period;
+  refreshMpLeaderboard();
+});
+
+async function refreshMpLeaderboard(){
+  const body = document.getElementById('mpLbBody');
+  const empty = document.getElementById('mpLbEmpty');
+  const head = document.getElementById('mpLbHead');
+  if(!body) return;
+  if(!mp.socket){ empty.style.display = 'block'; empty.textContent = 'Connect to the multiplayer server to see rankings.'; body.innerHTML=''; return; }
+
+  if(mpActivePeriod === 'elo'){
+    head.innerHTML = '<tr><th>Rank</th><th>Name</th><th>ELO</th><th>W</th><th>L</th></tr>';
+    mp.socket.emit('get-elo-leaderboard', {}, (res)=>{
+      if(!res.ok) return;
+      renderMpLbRows(res.entries, (e,i)=> `<td class="lb-rank">#${i+1}</td><td>${escapeHtml(e.name)}</td><td>${e.elo}</td><td>${e.wins}</td><td>${e.losses}</td>`);
+    });
+  } else {
+    head.innerHTML = '<tr><th>Rank</th><th>Name</th><th>Top Score</th></tr>';
+    mp.socket.emit('get-leaderboard', { period: mpActivePeriod }, (res)=>{
+      if(!res.ok) return;
+      renderMpLbRows(res.entries, (e,i)=> `<td class="lb-rank">#${i+1}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td>`);
+    });
+  }
+}
+
+function renderMpLbRows(entries, rowHtml){
+  const body = document.getElementById('mpLbBody');
+  const empty = document.getElementById('mpLbEmpty');
+  body.innerHTML = '';
+  if(!entries || entries.length === 0){
+    empty.style.display = 'block';
+    empty.textContent = 'No ranked matches played in this period yet.';
+    return;
+  }
+  empty.style.display = 'none';
+  entries.forEach((e,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = rowHtml(e,i);
+    body.appendChild(tr);
+  });
+}
+
+</script>
+</body>
+</html>
