@@ -3,7 +3,7 @@
 // Run with: npm install && npm start   (defaults to port 3001, or set PORT env var)
 
 const express = require('express');
-const http = require('http');
+const https = require('https');
 const { Server } = require('socket.io');
 const { makeRoom, addPlayer, removePlayer, callToss, chooseRole, throwNumber, getPlayerScore } = require('./roomEngine');
 const playerStore = require('./playerStore');
@@ -11,7 +11,7 @@ const playerStore = require('./playerStore');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: '*' } // tighten this to your real domain before going to production
+  cors: { origin: 'https://agni-hand-cricket-ez.onrender.com' } // tighten this to your real domain before going to production
 });
 
 const rooms = new Map(); // code -> room
